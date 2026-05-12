@@ -1,0 +1,6 @@
+{
+  "name": "Econlibery-MBSTU",
+  "description": "Economics Library - MBSTU. Digital management system for students and donors.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}

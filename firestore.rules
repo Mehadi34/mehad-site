@@ -1,0 +1,142 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email_verified == true && request.auth.token.email == 'mehadihasan22p@gmail.com') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'reader') == 'admin')
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidBook(data) {
+      return data.keys().hasAll(['title']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             (!('author' in data) || (data.author is string && data.author.size() <= 200)) &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 100)) &&
+             (!('status' in data) || (data.status in ['available', 'rented', 'new'])) &&
+             (!('price' in data) || (data.price is number)) &&
+             (!('code' in data) || (data.code is string && data.code.size() <= 50)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1000));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['fullName', 'phone', 'username']) &&
+             data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 200 &&
+             data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 15 &&
+             data.username is string && data.username.size() > 0 && data.username.size() <= 50 &&
+             (!('role' in data) || (data.role in ['reader', 'admin'])) &&
+             (!('registrationStatus' in data) || (data.registrationStatus in ['pending', 'approved', 'rejected']));
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['amount', 'type', 'date', 'desc']) &&
+             data.amount is number &&
+             data.type in ['income', 'expense'] &&
+             data.desc is string && data.desc.size() <= 500 &&
+             data.date is timestamp;
+    }
+
+    function isValidIssue(data) {
+      return data.keys().hasAll(['bookId', 'bookTitle', 'memberId', 'memberName', 'status', 'issueDate', 'dueDate']) &&
+             data.status in ['active', 'returned', 'overdue'] &&
+             data.issueDate is timestamp &&
+             data.dueDate is timestamp;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['senderName', 'senderEmail', 'subject', 'content', 'status', 'createdAt']) &&
+             data.senderName is string && data.senderName.size() <= 200 &&
+             data.senderEmail is string && data.senderEmail.size() <= 200 &&
+             data.subject is string && data.subject.size() <= 300 &&
+             data.content is string && data.content.size() <= 5000 &&
+             data.status in ['unread', 'read', 'replied'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidDue(data) {
+      return data.keys().hasAll(['memberId', 'memberName', 'amount', 'status', 'createdAt']) &&
+             data.memberId is string && data.memberId.size() <= 100 &&
+             data.memberName is string && data.memberName.size() <= 200 &&
+             data.amount is number &&
+             data.status in ['pending', 'paid'] &&
+             data.createdAt is timestamp;
+    }
+
+    // --- Rules ---
+
+    match /books/{bookId} {
+      allow list: if true;
+      allow get: if true && isValidId(bookId);
+      allow create, update, delete: if isAdmin() && isValidId(bookId);
+    }
+
+    match /donors/{donorId} {
+      allow list: if true;
+      allow get: if true && isValidId(donorId);
+      allow create, update, delete: if isAdmin() && isValidId(donorId);
+    }
+
+    match /events/{eventId} {
+      allow list: if true;
+      allow get: if true && isValidId(eventId);
+      allow create, update, delete: if isAdmin() && isValidId(eventId);
+    }
+
+    match /transactions/{txId} {
+      allow list, get: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(txId);
+    }
+
+    match /dues/{dueId} {
+      allow list, get: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(dueId);
+    }
+
+    match /issues/{issueId} {
+      allow list, get: if isAdmin();
+      allow create, update, delete: if isAdmin() && isValidId(issueId);
+    }
+
+    match /messages/{msgId} {
+      allow create: if isValidMessage(incoming()) && isValidId(msgId);
+      allow list, get, update, delete: if isAdmin() && isValidId(msgId);
+    }
+
+    match /users/{userId} {
+      allow list: if isAdmin();
+      allow get: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow create: if isValidUser(incoming()) && isValidId(userId);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId);
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+  }
+}

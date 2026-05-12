@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "books": {
+      "title": "Book",
+      "description": "Library book collection",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["available", "rented", "new"] },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "publishedYear": { "type": "string" }
+      },
+      "required": ["title", "author"]
+    },
+    "donors": {
+      "title": "Donor",
+      "description": "Library donors and supporters",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "designation": { "type": "string" },
+        "location": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["honored", "recent"] }
+      },
+      "required": ["name"]
+    },
+    "transactions": {
+      "title": "Transaction",
+      "description": "Financial records of the library",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["income", "expense"] }
+      },
+      "required": ["amount", "type", "date"]
+    },
+    "users": {
+      "title": "User",
+      "description": "Library members and admins",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string", "enum": ["reader", "admin"] },
+        "registrationStatus": { "type": "string", "enum": ["pending", "approved"] },
+        "paymentMethod": { "type": "string" },
+        "trxId": { "type": "string" },
+        "senderNumber": { "type": "string" }
+      },
+      "required": ["fullName", "phone", "username"]
+    },
+    "events": {
+      "title": "Event",
+      "description": "Library events and competitions",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "location": { "type": "string" }
+      },
+      "required": ["title", "date"]
+    },
+    "dues": {
+      "title": "Due",
+      "description": "Member dues and fines",
+      "type": "object",
+      "properties": {
+        "memberId": { "type": "string" },
+        "memberName": { "type": "string" },
+        "amount": { "type": "number" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "paid"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["memberId", "memberName", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "books": {
+      "schema": "books",
+      "description": "Collection of books available in the library"
+    },
+    "donors": {
+      "schema": "donors",
+      "description": "Collection of donors"
+    },
+    "transactions": {
+      "schema": "transactions",
+      "description": "Financial income and expense records"
+    },
+    "users": {
+      "schema": "users",
+      "description": "User profiles and membership data"
+    },
+    "events": {
+      "schema": "events",
+      "description": "Event listings"
+    },
+    "dues": {
+      "schema": "dues",
+      "description": "Records of member dues"
+    }
+  }
+}
