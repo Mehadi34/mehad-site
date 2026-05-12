@@ -21,10 +21,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-// Only pass the database ID if it's explicitly set to something other than the default
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+// Automatically handle database ID, defaulting to (default) if not specified or explicitly set
+export const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)')
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app); 
+  : getFirestore(app);
 export const auth = getAuth();
 
 async function testConnection() {

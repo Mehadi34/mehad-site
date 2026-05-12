@@ -1,14 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, Send, X, Bot, Sparkles, Database, History, Search, Info, HelpCircle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { collection, getDocs, limit, query } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Lazy initialize AI client
+  const ai = useMemo(() => {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return null;
+    return new GoogleGenAI({ apiKey: key });
+  }, []);
   const [messages, setMessages] = useState<{ role: 'user' | 'bot'; content: string }[]>([
     { role: 'bot', content: 'আসসালামু আলাইকুম! আমি আপনার লাইব্রেরি অ্যাসিস্ট্যান্ট AI। আমি আপনাকে বই খুঁজে পেতে বা লাইব্রেরি সম্পর্কে জানতে সাহায্য করতে পারি।' }
   ]);
@@ -44,6 +49,9 @@ export default function AIAssistant() {
     setLoading(true);
 
     try {
+      if (!ai) {
+        throw new Error("AI Assistant is not configured. The GEMINI_API_KEY is missing from the environment.");
+      }
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [
