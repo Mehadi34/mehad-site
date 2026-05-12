@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -32,19 +32,59 @@ import AdminMessages from './pages/admin/Messages';
 import AdminDonors from './pages/admin/Donors';
 import AdminDues from './pages/admin/Dues';
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-stone-50 p-6">
+          <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-stone-100 text-center">
+            <h1 className="text-2xl font-black text-stone-900 mb-4">Oops! Something went wrong.</h1>
+            <p className="text-stone-500 mb-6 font-medium">The application failed to load. This might be due to missing configuration or a temporary error.</p>
+            <div className="bg-red-50 p-4 rounded-xl text-left mb-6 overflow-auto max-h-40">
+              <code className="text-xs text-red-600 font-mono">{this.state.error?.toString()}</code>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-brand-primary text-white px-6 py-3 rounded-xl font-bold hover:brightness-110"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
   useEffect(() => {
-    seedDemoData();
+    seedDemoData().catch(err => console.warn("Seed failed:", err));
   }, []);
 
   return (
-    <Router>
-      <div className="min-h-screen font-sans selection:bg-brand-primary/10 flex flex-col">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
-          <Route path="/books" element={<><Navbar /><Books /><Footer /></>} />
-          <Route path="/events" element={<><Navbar /><Events /><Footer /></>} />
+    <ErrorBoundary>
+      <Router>
+        <div className="min-h-screen font-sans selection:bg-brand-primary/10 flex flex-col">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
+            <Route path="/books" element={<><Navbar /><Books /><Footer /></>} />
+            <Route path="/events" element={<><Navbar /><Events /><Footer /></>} />
           <Route path="/shop" element={<><Navbar /><Shop /><Footer /></>} />
           <Route path="/donors" element={<><Navbar /><Donors /><Footer /></>} />
           <Route path="/accounts" element={<><Navbar /><Accounts /><Footer /></>} />
@@ -68,5 +108,6 @@ export default function App() {
         <AIAssistant />
       </div>
     </Router>
+    </ErrorBoundary>
   );
 }
